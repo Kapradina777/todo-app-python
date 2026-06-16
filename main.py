@@ -1,4 +1,4 @@
-from todo import create_task, complete_task, format_task, get_pending_tasks, get_completed_tasks
+from todo_manager import TodoManager
 from storage import save_tasks, load_tasks
 
 
@@ -11,71 +11,60 @@ def show_menu():
     print("5. Exit")
 
 
-def show_all_tasks(tasks):
-    if not tasks:
+def show_all_tasks(manager):
+    if not manager.tasks:
         print("No tasks yet.")
         return
-    for task in tasks:
-        print(format_task(task))
-
-
-def add_task(tasks):
-    title = input("Task title: ").strip()
-    if not title:
-        print("Title cannot be empty.")
-        return
-    new_id = max((t["id"] for t in tasks), default=0) + 1
-    tasks.append(create_task(new_id, title))
-    print(f"✅ Task '{title}' added.")
-
-
-def complete_task_cli(tasks):
-    show_all_tasks(tasks)
-    try:
-        task_id = int(input("Enter task ID to complete: "))
-        task = next((t for t in tasks if t["id"] == task_id), None)
-        if task:
-            complete_task(task)
-            print(f"✅ Task '{task['title']}' completed.")
-        else:
-            print("Task not found.")
-    except ValueError:
-        print("Please enter a valid number.")
-
-
-def delete_task(tasks):
-    show_all_tasks(tasks)
-    try:
-        task_id = int(input("Enter task ID to delete: "))
-        task = next((t for t in tasks if t["id"] == task_id), None)
-        if task:
-            tasks.remove(task)
-            print(f"🗑️ Task '{task['title']}' deleted.")
-        else:
-            print("Task not found.")
-    except ValueError:
-        print("Please enter a valid number.")
+    for task in manager.tasks:
+        print(task)
 
 
 def main():
-    tasks = load_tasks()
+    manager = TodoManager()
+    manager.load(load_tasks())
 
     while True:
         show_menu()
         choice = input("Choose option: ").strip()
 
         if choice == "1":
-            show_all_tasks(tasks)
+            show_all_tasks(manager)
+
         elif choice == "2":
-            add_task(tasks)
+            title = input("Task title: ").strip()
+            if title:
+                task = manager.add_task(title)
+                print(f"✅ Added: {task}")
+            else:
+                print("Title cannot be empty.")
+
         elif choice == "3":
-            complete_task_cli(tasks)
+            show_all_tasks(manager)
+            try:
+                task_id = int(input("Enter task ID to complete: "))
+                if manager.complete_task(task_id):
+                    print("✅ Task completed.")
+                else:
+                    print("Task not found.")
+            except ValueError:
+                print("Please enter a valid number.")
+
         elif choice == "4":
-            delete_task(tasks)
+            show_all_tasks(manager)
+            try:
+                task_id = int(input("Enter task ID to delete: "))
+                if manager.delete_task(task_id):
+                    print("🗑️ Task deleted.")
+                else:
+                    print("Task not found.")
+            except ValueError:
+                print("Please enter a valid number.")
+
         elif choice == "5":
-            save_tasks(tasks)
+            save_tasks(manager.dump())
             print("Goodbye! 👋")
             break
+
         else:
             print("Invalid option. Try again.")
 
